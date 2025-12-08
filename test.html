@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interaktívne IT Slovíčka (Shuffle)</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f6f8;
+            color: #333;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+
+        /* Kontajner pre Hľadanie a Tlačidlo */
+        .controls-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            justify-content: center;
+        }
+
+        #search-box {
+            flex: 1; /* Roztiahne sa na väčšinu šírky */
+            padding: 12px 20px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 25px;
+            outline: none;
+            transition: border-color 0.3s;
+            max-width: 600px;
+        }
+
+        #search-box:focus {
+            border-color: #3498db;
+        }
+
+        #shuffle-btn {
+            padding: 0 25px;
+            background-color: #8e44ad; /* Fialová pre odlíšenie */
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.1s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #shuffle-btn:hover {
+            background-color: #732d91;
+        }
+
+        #shuffle-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Grid pre zoznam */
+        .vocab-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .vocab-row {
+            display: flex;
+            align-items: stretch;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            overflow: hidden;
+            transition: transform 0.1s;
+        }
+
+        .vocab-row:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        /* Ľavá strana - Angličtina */
+        .english-term {
+            flex: 1;
+            padding: 20px;
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            border-right: 1px solid #eee;
+            background-color: #fff;
+        }
+
+        /* Pravá strana - Kartička */
+        .translation-card {
+            flex: 1;
+            padding: 20px;
+            cursor: pointer;
+            background-color: #3498db; /* Modrá farba = zakryté */
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            transition: background-color 0.3s ease;
+            min-height: 60px;
+            user-select: none;
+        }
+
+        .translation-card:hover {
+            background-color: #2980b9;
+        }
+
+        /* Štýl pre ODHALENÚ kartičku */
+        .translation-card.revealed {
+            background-color: #e8f6f3; /* Svetlozelená */
+            color: #16a085;
+            cursor: default;
+        }
+
+        .translation-card .hidden-content {
+            display: none;
+        }
+        
+        .translation-card .placeholder-icon {
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+
+        .translation-card.revealed .placeholder-icon {
+            display: none;
+        }
+
+        .translation-card.revealed .hidden-content {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+
+        .sk-text {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .def-text {
+            font-size: 0.85em;
+            color: #555;
+            font-style: italic;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Responzivita */
+        @media (max-width: 600px) {
+            .controls-container {
+                flex-direction: column;
+            }
+            #shuffle-btn {
+                padding: 15px;
+                justify-content: center;
+            }
+            .vocab-row {
+                flex-direction: column;
+            }
+            .english-term {
+                border-right: none;
+                border-bottom: 1px solid #eee;
+                justify-content: center;
+                background-color: #f9f9f9;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>📚 IT Vocabulary List</h1>
+    
+    <div class="controls-container">
+        <input type="text" id="search-box" placeholder="Hľadať slovo..." onkeyup="filterList()">
+        <button id="shuffle-btn" onclick="shuffleAndRender()">🔀 Zamiešať</button>
+    </div>
+
+    <div class="vocab-list" id="list-container">
+        </div>
+
+    <script>
+        // Databáza slovíčok
+        const vocabulary = [
+            { term: "active cell", sk: "aktívna bunka", def: "the cell currently selected and ready for editing" },
+            { term: "adjust", sk: "prispôsobiť/upraviť", def: "to change slightly to improve something" },
+            { term: "align", sk: "zarovnať", def: "to position text left, right, centre, or justified" },
+            { term: "alignment", sk: "zarovnanie", def: "the way text is positioned on a page" },
+            { term: "alter", sk: "zmeniť/upraviť", def: "to make a small change" },
+            { term: "analyse data", sk: "analyzovať dáta", def: "to examine data to find patterns" },
+            { term: "antivirus", sk: "antivírus", def: "software that detects and removes viruses" },
+            { term: "application", sk: "aplikácia/program", def: "software used to perform a task" },
+            { term: "bandwidth", sk: "šírka pásma", def: "amount of data that can be transmitted" },
+            { term: "breakthrough", sk: "prelomový objav", def: "a major discovery or improvement" },
+            { term: "browse", sk: "prehliadať", def: "to look for information on the internet" },
+            { term: "browser", sk: "internetový prehliadač", def: "software for viewing web pages" },
+            { term: "bug", sk: "chyba v programe", def: "an error that causes software problems" },
+            { term: "burglar alarms", sk: "poplašné zariadenia", def: "systems detecting intrusions" },
+            { term: "calculate", sk: "vypočítať", def: "to find an answer with numbers" },
+            { term: "calculate data", sk: "vypočítať dáta", def: "to perform calculations on data" },
+            { term: "call centre", sk: "call centrum", def: "a place for answering customer calls" },
+            { term: "capacitor", sk: "kondenzátor", def: "component that stores electrical energy" },
+            { term: "cell", sk: "bunka", def: "a single box in a spreadsheet" },
+            { term: "clip art", sk: "obrázky/kliparty", def: "ready-made images for documents" },
+            { term: "column", sk: "stĺpec", def: "a vertical set of cells" },
+            { term: "communication", sk: "komunikácia", def: "exchange of information" },
+            { term: "computer games", sk: "počítačové hry", def: "games played on a computer" },
+            { term: "computer-assisted", sk: "počítačom podporovaný", def: "supported by a computer" },
+            { term: "CAD (computer-assisted design)", sk: "počítačom podporovaný dizajn", def: "design using software" },
+            { term: "CAL (computer-assisted learning)", sk: "počítačové učenie", def: "learning with computers" },
+            { term: "CAM (computer-assisted manufacturing)", sk: "počítačom riadená výroba", def: "production using computers" },
+            { term: "computerize", sk: "skomputerizovať", def: "to convert to computer control" },
+            { term: "conductor", sk: "vodič", def: "material that conducts electric current" },
+            { term: "connect", sk: "pripojiť", def: "to join devices together" },
+            { term: "connector", sk: "konektor", def: "a device that joins cables" },
+            { term: "control", sk: "riadiť/ovládať", def: "to manage how something behaves" },
+            { term: "cut and paste", sk: "vystrihnúť a vložiť", def: "remove and insert text elsewhere" },
+            { term: "data", sk: "dáta/údaje", def: "information processed by a computer" },
+            { term: "data processing", sk: "spracovanie dát", def: "handling or analyzing data" },
+            { term: "designer", sk: "dizajnér", def: "a person who creates designs or layouts" },
+            { term: "device", sk: "zariadenie", def: "an electronic tool or machine" },
+            { term: "digital", sk: "digitálny", def: "using electronic signals" },
+            { term: "digital TV", sk: "digitálna TV", def: "television using digital signals" },
+            { term: "distance learning", sk: "dištančné vzdelávanie", def: "studying online" },
+            { term: "download", sk: "stiahnuť", def: "copy files from the internet" },
+            { term: "driver", sk: "ovládač", def: "software that controls hardware" },
+            { term: "DTP (desktop publishing)", sk: "počítačová sadzba", def: "creating printed materials" },
+            { term: "e-mail", sk: "e-mail", def: "electronic messages" },
+            { term: "electronic", sk: "elektronický", def: "operating using electronics" },
+            { term: "electric charge", sk: "elektrický náboj", def: "property causing attraction/repulsion" },
+            { term: "electric current", sk: "elektrický prúd", def: "flow of electric charge" },
+            { term: "educational software", sk: "vzdelávací softvér", def: "learning programs" },
+            { term: "equation", sk: "rovnica", def: "a mathematical equality" },
+            { term: "EPOS", sk: "elektronická pokladňa", def: "electronic point-of-sale system" },
+            { term: "expert systems", sk: "expertné systémy", def: "programs aiding doctors" },
+            { term: "field", sk: "pole", def: "placeholder for data in a document" },
+            { term: "flexibility", sk: "flexibilita", def: "ability to adapt" },
+            { term: "font", sk: "písmo", def: "the design/style of text" },
+            { term: "footer", sk: "pätka", def: "bottom section of a page" },
+            { term: "formula", sk: "vzorec", def: "instruction for calculations in spreadsheets" },
+            { term: "function", sk: "funkcia", def: "built-in command performing calculations" },
+            { term: "gigabyte", sk: "gigabajt", def: "unit of digital storage" },
+            { term: "hardware", sk: "hardvér", def: "physical components of a computer" },
+            { term: "header", sk: "hlavička", def: "top part of a page" },
+            { term: "hyperlink", sk: "hypertextový odkaz", def: "clickable link on a webpage" },
+            { term: "import", sk: "importovať", def: "bring data from another program" },
+            { term: "incorrect", sk: "nesprávny", def: "not correct" },
+            { term: "indented text", sk: "odsadený text", def: "text moved inward from margin" },
+            { term: "indent", sk: "odsadiť", def: "to move text inward" },
+            { term: "indentation", sk: "odsadenie", def: "the space before a paragraph" },
+            { term: "information", sk: "informácie", def: "processed or meaningful data" },
+            { term: "input", sk: "vstup/zadanie", def: "data entered into a system" },
+            { term: "install", sk: "nainštalovať", def: "to put software on a device" },
+            { term: "instruction", sk: "inštrukcia", def: "command telling computer what to do" },
+            { term: "integrated circuit", sk: "integrovaný obvod", def: "tiny chip with many components" },
+            { term: "interactive whiteboards", sk: "interaktívne tabule", def: "touch screens for teaching" },
+            { term: "Internet", sk: "internet", def: "global computer network" },
+            { term: "Internet advertising", sk: "internetová reklama", def: "promoting products online" },
+            { term: "Internet banking", sk: "internetové bankovníctvo", def: "online banking" },
+            { term: "Internet shopping", sk: "online nakupovanie", def: "buying goods online" },
+            { term: "intranet", sk: "intranet", def: "private internal company network" },
+            { term: "intersection", sk: "priesečník", def: "where a row and column meet" },
+            { term: "justify", sk: "zarovnať", def: "align text evenly" },
+            { term: "kilobit", sk: "kilobit", def: "unit of digital data" },
+            { term: "launch", sk: "spustiť", def: "to open a program" },
+            { term: "log", sk: "záznam/prihlásiť sa", def: "to record or to sign in" },
+            { term: "mail merge", sk: "hromadná korešpondencia", def: "create many personalized documents" },
+            { term: "menu", sk: "menu/ponuka", def: "list of software options" },
+            { term: "microchip", sk: "mikročip", def: "tiny electronic circuit" },
+            { term: "modelling", sk: "modelovanie", def: "using computers to simulate situations" },
+            { term: "monitor", sk: "monitorovať/monitor", def: "screen or observe" },
+            { term: "output", sk: "výstup", def: "information produced by a computer" },
+            { term: "outsourcing", sk: "outsourcing", def: "delegating tasks to another company" },
+            { term: "patient monitoring devices", sk: "zariadenia na sledovanie", def: "devices tracking health signals" },
+            { term: "PC", sk: "osobný počítač", def: "computer for one user" },
+            { term: "plug-in", sk: "doplnok", def: "small software that adds functions" },
+            { term: "predict", sk: "predpovedať", def: "to say future outcome" },
+            { term: "procedure", sk: "postup", def: "set of steps to complete task" },
+            { term: "product testing systems", sk: "systémy testovania výrobkov", def: "checking quality" },
+            { term: "program", sk: "program/programovať", def: "software or write code" },
+            { term: "programmer", sk: "programátor", def: "person who writes code" },
+            { term: "projector", sk: "projektor", def: "device that displays images on screen" },
+            { term: "query", sk: "dotaz", def: "request for data (database)" },
+            { term: "ready-to-use", sk: "pripravený", def: "something that works immediately" },
+            { term: "resistor", sk: "rezistor", def: "component reducing electric current" },
+            { term: "restart", sk: "reštartovať", def: "to turn a computer off/on again" },
+            { term: "robot", sk: "robot", def: "machine performing tasks automatically" },
+            { term: "robot surgery", sk: "robotická operácia", def: "surgery using robots" },
+            { term: "row", sk: "riadok", def: "horizontal line of cells" },
+            { term: "scan", sk: "skenovať", def: "make a digital copy" },
+            { term: "scanner", sk: "skener", def: "device for scanning" },
+            { term: "semiconductor", sk: "polovodič", def: "material partly conducting electricity" },
+            { term: "silicon wafer", sk: "kremíková doštička", def: "base for making chips" },
+            { term: "skills", sk: "zručnosti", def: "abilities to perform tasks" },
+            { term: "software", sk: "softvér", def: "programs on a computer" },
+            { term: "software engineer", sk: "softvérový inžinier", def: "person building software" },
+            { term: "software package", sk: "softvérový balík", def: "set of programs sold together" },
+            { term: "spreadsheet", sk: "tabuľka", def: "program for organizing data" },
+            { term: "stock control systems", sk: "systémy kontroly zásob", def: "track inventory" },
+            { term: "store", sk: "uložiť", def: "save data" },
+            { term: "system", sk: "systém", def: "connected parts working together" },
+            { term: "task", sk: "úloha", def: "piece of work to complete" },
+            { term: "technology", sk: "technológia", def: "tools and methods using digital systems" },
+            { term: "telecommunications", sk: "telekomunikácie", def: "communication over distances" },
+            { term: "teleconferencing", sk: "videokonferencia", def: "meetings via video/audio" },
+            { term: "teleworking", sk: "práca na diaľku", def: "working from home" },
+            { term: "text", sk: "text", def: "written content" },
+            { term: "transistor", sk: "tranzistor", def: "device switching or amplifying signals" },
+            { term: "typeface", sk: "druh písma", def: "design of letters" },
+            { term: "upgrade", sk: "vylepšiť", def: "install a newer version" },
+            { term: "vary", sk: "meniť", def: "change something" },
+            { term: "virus", sk: "vírus", def: "malicious software" },
+            { term: "wave-guide", sk: "vlnovod", def: "guides electromagnetic waves" },
+            { term: "web page", sk: "webová stránka", def: "a document on the internet" },
+            { term: "wire", sk: "kábel/drôt", def: "conductor carrying electricity" },
+            { term: "worksheet", sk: "pracovný list", def: "page in a spreadsheet file" }
+        ];
+
+        // Pracovná kópia zoznamu (tá sa bude filtrovať a miešať)
+        let currentList = [...vocabulary];
+
+        const listContainer = document.getElementById('list-container');
+        const searchBox = document.getElementById('search-box');
+
+        // Funkcia na vygenerovanie zoznamu
+        function renderList(items) {
+            listContainer.innerHTML = '';
+            items.forEach(item => {
+                const row = document.createElement('div');
+                row.className = 'vocab-row';
+
+                const englishSide = document.createElement('div');
+                englishSide.className = 'english-term';
+                englishSide.innerText = item.term;
+
+                const cardSide = document.createElement('div');
+                cardSide.className = 'translation-card';
+                cardSide.title = "Klikni pre odhalenie";
+                
+                cardSide.innerHTML = `
+                    <div class="placeholder-icon">?</div>
+                    <div class="hidden-content">
+                        <div class="sk-text">${item.sk}</div>
+                        <div class="def-text">${item.def}</div>
+                    </div>
+                `;
+
+                cardSide.addEventListener('click', function() {
+                    if (!this.classList.contains('revealed')) {
+                        this.classList.add('revealed');
+                    }
+                });
+
+                row.appendChild(englishSide);
+                row.appendChild(cardSide);
+                listContainer.appendChild(row);
+            });
+        }
+
+        // Funkcia na zamiešanie (Fisher-Yates shuffle)
+        function shuffleAndRender() {
+            // Vyčistíme vyhľadávanie, aby sme miešali všetko
+            searchBox.value = '';
+            
+            // Zamiešame hlavné pole (resp. pracovnú kópiu)
+            for (let i = currentList.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [currentList[i], currentList[j]] = [currentList[j], currentList[i]];
+            }
+            
+            renderList(currentList);
+        }
+
+        // Funkcia na filtrovanie (Search)
+        function filterList() {
+            const query = searchBox.value.toLowerCase();
+            
+            // Filtrujeme z pôvodnej (plnej) databázy, nie zo zamiešanej
+            // Ak chceme zachovať miešanie aj pri filtrovaní, museli by sme filtrovať currentList,
+            // ale pre UX je lepšie pri hľadaní vrátiť relevantné výsledky.
+            const filtered = vocabulary.filter(item => 
+                item.term.toLowerCase().includes(query) || 
+                item.sk.toLowerCase().includes(query)
+            );
+            
+            // Aktualizujeme pracovný zoznam, aby sme videli len vyfiltrované
+            // (Ak user klikne Shuffle po filtrovaní, zamieša sa celý zoznam znova, pozri funkciu shuffleAndRender)
+            renderList(filtered);
+        }
+
+        // Spustenie pri štarte (abecedne - default)
+        // Ak chceš aby to bolo zamiešané hneď pri štarte, odkomentuj riadok shuffleAndRender()
+        renderList(currentList);
+
+    </script>
+
+</body>
+</html>
