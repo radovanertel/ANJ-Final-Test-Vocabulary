@@ -9,9 +9,6 @@ Jednoduchá interaktívna webová aplikácia na učenie a precvičovanie anglič
 * **Shuffle (Miešanie):** Tlačidlo na náhodné poprehadzovanie poradia pre efektívnejšie učenie.
 * **Zero Dependencies:** Funguje v každom prehliadači, čisté HTML/CSS/JS bez inštalácie.
 
-## 🛠️ Ako spustiť
-Stačí stiahnuť súbor `index.html` (alebo `slovicka.html`) a otvoriť ho v ľubovoľnom webovom prehliadači (Chrome, Firefox, Edge).
+# 📚 Tu si môžete precvičiť slovíčka.
 
-## 🌍 Jazyky
-* Termíny: Angličtina 🇬🇧
-* Preklady: Slovenčina 🇸🇰
+[👉 Klikni sem pre spustenie testu](test.html)
