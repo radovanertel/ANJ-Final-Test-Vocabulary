@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interaktívne IT Slovíčka (Shuffle)</title>
+    <title>Interaktívne IT Slovíčka (Full)</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -20,33 +20,31 @@
             margin-bottom: 20px;
         }
 
-        /* Kontajner pre Hľadanie a Tlačidlo */
+        /* Kontajner pre ovládanie */
         .controls-container {
             display: flex;
+            flex-wrap: wrap; /* Aby sa to na mobile zalamovalo */
             gap: 10px;
             margin-bottom: 30px;
             justify-content: center;
         }
 
         #search-box {
-            flex: 1; /* Roztiahne sa na väčšinu šírky */
+            flex: 2; 
             padding: 12px 20px;
             font-size: 16px;
             border: 2px solid #ddd;
             border-radius: 25px;
             outline: none;
             transition: border-color 0.3s;
-            max-width: 600px;
+            min-width: 200px;
         }
 
         #search-box:focus {
             border-color: #3498db;
         }
 
-        #shuffle-btn {
-            padding: 0 25px;
-            background-color: #8e44ad; /* Fialová pre odlíšenie */
-            color: white;
+        button {
             border: none;
             border-radius: 25px;
             font-size: 16px;
@@ -56,15 +54,23 @@
             display: flex;
             align-items: center;
             gap: 8px;
+            padding: 12px 20px;
+            color: white;
         }
 
-        #shuffle-btn:hover {
-            background-color: #732d91;
-        }
-
-        #shuffle-btn:active {
+        button:active {
             transform: scale(0.95);
         }
+
+        #shuffle-btn {
+            background-color: #8e44ad; /* Fialová */
+        }
+        #shuffle-btn:hover { background-color: #732d91; }
+
+        #toggle-all-btn {
+            background-color: #e67e22; /* Oranžová */
+        }
+        #toggle-all-btn:hover { background-color: #d35400; }
 
         /* Grid pre zoznam */
         .vocab-list {
@@ -116,6 +122,7 @@
             transition: background-color 0.3s ease;
             min-height: 60px;
             user-select: none;
+            word-wrap: break-word; /* Zalomenie dlhých slov */
         }
 
         .translation-card:hover {
@@ -166,21 +173,14 @@
 
         /* Responzivita */
         @media (max-width: 600px) {
-            .controls-container {
-                flex-direction: column;
-            }
-            #shuffle-btn {
-                padding: 15px;
-                justify-content: center;
-            }
-            .vocab-row {
-                flex-direction: column;
-            }
             .english-term {
                 border-right: none;
                 border-bottom: 1px solid #eee;
                 justify-content: center;
                 background-color: #f9f9f9;
+            }
+            .vocab-row {
+                flex-direction: column;
             }
         }
     </style>
@@ -192,6 +192,7 @@
     <div class="controls-container">
         <input type="text" id="search-box" placeholder="Hľadať slovo..." onkeyup="filterList()">
         <button id="shuffle-btn" onclick="shuffleAndRender()">🔀 Zamiešať</button>
+        <button id="toggle-all-btn" onclick="toggleAllCards()">👁️ Odkryť všetko</button>
     </div>
 
     <div class="vocab-list" id="list-container">
@@ -329,16 +330,22 @@
             { term: "wire", sk: "kábel/drôt", def: "conductor carrying electricity" },
             { term: "worksheet", sk: "pracovný list", def: "page in a spreadsheet file" }
         ];
-
-        // Pracovná kópia zoznamu (tá sa bude filtrovať a miešať)
+        
+        // Pracovná kópia zoznamu
         let currentList = [...vocabulary];
+        let areAllRevealed = false; // Stav tlačidla na odkrytie
 
         const listContainer = document.getElementById('list-container');
         const searchBox = document.getElementById('search-box');
+        const toggleBtn = document.getElementById('toggle-all-btn');
 
         // Funkcia na vygenerovanie zoznamu
         function renderList(items) {
             listContainer.innerHTML = '';
+            
+            // Pri každom novom vyrenderovaní resetujeme stav tlačidla
+            resetToggleButton();
+
             items.forEach(item => {
                 const row = document.createElement('div');
                 row.className = 'vocab-row';
@@ -360,7 +367,10 @@
                 `;
 
                 cardSide.addEventListener('click', function() {
-                    if (!this.classList.contains('revealed')) {
+                    // Kliknutím togglujeme stav 'revealed'
+                    if (this.classList.contains('revealed')) {
+                        this.classList.remove('revealed');
+                    } else {
                         this.classList.add('revealed');
                     }
                 });
@@ -371,39 +381,50 @@
             });
         }
 
-        // Funkcia na zamiešanie (Fisher-Yates shuffle)
-        function shuffleAndRender() {
-            // Vyčistíme vyhľadávanie, aby sme miešali všetko
-            searchBox.value = '';
+        // Funkcia na hromadné odkrytie/zakrytie
+        function toggleAllCards() {
+            const allCards = document.querySelectorAll('.translation-card');
             
-            // Zamiešame hlavné pole (resp. pracovnú kópiu)
+            if (areAllRevealed) {
+                // Zakryť všetko
+                allCards.forEach(card => card.classList.remove('revealed'));
+                toggleBtn.innerText = "👁️ Odkryť všetko";
+                areAllRevealed = false;
+            } else {
+                // Odkryť všetko
+                allCards.forEach(card => card.classList.add('revealed'));
+                toggleBtn.innerText = "🙈 Zakryť všetko";
+                areAllRevealed = true;
+            }
+        }
+
+        // Reset tlačidla (pri filtrovaní alebo miešaní)
+        function resetToggleButton() {
+            areAllRevealed = false;
+            toggleBtn.innerText = "👁️ Odkryť všetko";
+        }
+
+        // Zamiešanie
+        function shuffleAndRender() {
+            searchBox.value = '';
             for (let i = currentList.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [currentList[i], currentList[j]] = [currentList[j], currentList[i]];
             }
-            
             renderList(currentList);
         }
 
-        // Funkcia na filtrovanie (Search)
+        // Filtrovanie
         function filterList() {
             const query = searchBox.value.toLowerCase();
-            
-            // Filtrujeme z pôvodnej (plnej) databázy, nie zo zamiešanej
-            // Ak chceme zachovať miešanie aj pri filtrovaní, museli by sme filtrovať currentList,
-            // ale pre UX je lepšie pri hľadaní vrátiť relevantné výsledky.
             const filtered = vocabulary.filter(item => 
                 item.term.toLowerCase().includes(query) || 
                 item.sk.toLowerCase().includes(query)
             );
-            
-            // Aktualizujeme pracovný zoznam, aby sme videli len vyfiltrované
-            // (Ak user klikne Shuffle po filtrovaní, zamieša sa celý zoznam znova, pozri funkciu shuffleAndRender)
             renderList(filtered);
         }
 
-        // Spustenie pri štarte (abecedne - default)
-        // Ak chceš aby to bolo zamiešané hneď pri štarte, odkomentuj riadok shuffleAndRender()
+        // Spustenie pri štarte
         renderList(currentList);
 
     </script>
