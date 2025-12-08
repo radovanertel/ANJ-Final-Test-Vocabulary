@@ -11,4 +11,4 @@ Jednoduchá interaktívna webová aplikácia na učenie a precvičovanie anglič
 
 # 📚 Tu si môžete precvičiť slovíčka.
 
-[👉 Klikni sem pre spustenie testu](test.html)
+[👉 Klikni sem pre spustenie testu](https://radovanertel.github.io/ANJ-Final-Test-Vocabulary/test.html)
